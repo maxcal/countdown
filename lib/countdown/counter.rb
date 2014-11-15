@@ -18,24 +18,24 @@ module Countdown
     # @raise TypeError
     #   if val is not an acceptable parameter
     def seconds= val
-      if val.is_a?(String)
-        @seconds = from_string val
-      elsif val.is_a?(Integer)
+      if val.is_a?(Integer)
         @seconds = val
-      elsif val.respond_to?(:[]) && val[:seconds] || val[:minutes] || val[:hours] # quacks like a hash
+      elsif val.is_a?(String)
+        @seconds = from_string val
+      elsif self.class.quacks_like_a_hash?(val) # quacks like a hash
         @seconds = from_hash(val)
       else
         raise TypeError, "input must be a String, Integer or Hash like object"
       end
     end
 
-    # Checks the format of a string or match object
-    # @param input [String|MatchData]
+    # Checks the format of a string or hash like object
+    # @param input [String|Hash]
     # @return [Boolean]
     def self.valid? input
-      matches = input.kind_of?(MatchData) ? input : HOURS_MINUTES_SECONDS_REGEXP.match(input)
-      if matches && matches[:minutes] && matches[:seconds]
-        if matches[:hours].to_i < 24
+      hash = input.is_a?(String) ?  HOURS_MINUTES_SECONDS_REGEXP.match(input) : input
+      if hash && hash[:minutes] && hash[:seconds]
+        if hash[:hours].to_i < 24 && hash[:minutes].to_i < 60 && hash[:seconds].to_i < 60
           return true
         end
       end
@@ -75,6 +75,11 @@ module Countdown
       }
     end
 
+    def self.quacks_like_a_hash? val
+      val.respond_to?(:[]) && val[:seconds] || val[:minutes] || val[:hours]
+    end
+
+
     private
 
     HOURS_MINUTES_SECONDS_REGEXP = /^((?<hours>([0-5]?[0-9]|60))?:)?(?<minutes>([0-5]?[0-9]|60)):(?<seconds>([0-5]?[0-9]|60))$/.freeze
@@ -88,7 +93,10 @@ module Countdown
     end
 
     def from_hash hash
-       (hash[:hours].to_i * 3600) + (hash[:minutes].to_i * 60) + hash[:seconds].to_i
+      unless Counter.valid?(matches)
+        raise TypeError, "#{hash} is not a valid time input"
+      end
+      (hash[:hours].to_i * 3600) + (hash[:minutes].to_i * 60) + hash[:seconds].to_i
     end
   end
 end
