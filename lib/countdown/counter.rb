@@ -4,7 +4,7 @@ module Countdown
 
     # @param val [Interger|String|Hash] representing a length of time in HH:MM:SS or HH:SS
     # Sets the internal time store in seconds from input
-    def initialize(val)
+    def initialize val
       self.seconds = val
     end
 
